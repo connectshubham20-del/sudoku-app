@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="A production-quality Sudoku puzzle app with notes, hints, timer, and stats." />
+  <meta name="theme-color" content="#f5f0e8" />
+  <title>Sudoku</title>
+
+  <!-- Favicon: inline SVG -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%231a1a1a'/><text x='5' y='23' font-size='20' font-family='serif' fill='%23e8d5a3'>S</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Skip link ── -->
+  <a href="#board" class="skip-link">Skip to puzzle</a>
+
+  <!-- ══════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════ -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <div class="brand">
+        <h1 class="brand-name">Sudoku</h1>
+        <span class="brand-rule" aria-hidden="true"></span>
+      </div>
+      <div class="header-controls">
+        <button id="btn-theme" class="icon-btn" aria-label="Toggle light/dark theme" title="Toggle theme">
+          <span class="icon-sun" aria-hidden="true">☀</span>
+          <span class="icon-moon" aria-hidden="true">☽</span>
+        </button>
+        <button id="btn-stats-open" class="icon-btn" aria-label="View statistics" title="Statistics">
+          <span aria-hidden="true">◎</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       MAIN
+  ══════════════════════════════════════ -->
+  <main class="main-layout" role="main">
+
+    <!-- ── HUD bar ── -->
+    <div class="hud" role="region" aria-label="Game status">
+
+      <!-- Difficulty selector -->
+      <div class="hud-item">
+        <label class="hud-label" for="difficulty">Level</label>
+        <select id="difficulty" class="hud-select" aria-label="Difficulty level">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+          <option value="expert">Expert</option>
+        </select>
+      </div>
+
+      <!-- Timer -->
+      <div class="hud-item hud-center" aria-label="Elapsed time">
+        <span class="hud-label">Time</span>
+        <span class="hud-value timer-display" id="timer" aria-live="off">0:00</span>
+      </div>
+
+      <!-- Mistakes -->
+      <div class="hud-item hud-right" aria-label="Mistake count">
+        <span class="hud-label">Errors</span>
+        <span class="hud-value mistake-display" id="mistakes" aria-live="polite">0</span>
+      </div>
+
+    </div>
+
+    <!-- ── Lives ── -->
+    <div class="lives-row" role="status" aria-label="Lives remaining" aria-live="polite">
+      <span class="life" id="life-1" aria-label="Life 1">♥</span>
+      <span class="life" id="life-2" aria-label="Life 2">♥</span>
+      <span class="life" id="life-3" aria-label="Life 3">♥</span>
+    </div>
+
+    <!-- ── Board ── -->
+    <div class="board-shell" role="region" aria-label="Sudoku puzzle area">
+      <div
+        id="board"
+        class="board"
+        role="grid"
+        aria-label="Sudoku grid, 9 rows and 9 columns"
+        aria-describedby="kb-instructions"
+        tabindex="0"
+      ></div>
+      <p id="kb-instructions" class="sr-only">
+        Use arrow keys to move between cells. Type 1 through 9 to enter a number.
+        Press Delete or Backspace to erase. Press N to toggle notes mode.
+        Press Z to undo your last move.
+      </p>
+    </div>
+
+    <!-- ── Numpad ── -->
+    <div class="numpad" id="numpad" role="group" aria-label="Number input pad">
+      <!-- built by JS -->
+    </div>
+
+    <!-- ── Controls ── -->
+    <div class="controls" role="toolbar" aria-label="Game controls">
+      <button class="ctrl-btn btn-primary" id="btn-new"   aria-label="Start a new game">New Game</button>
+      <button class="ctrl-btn"             id="btn-reset" aria-label="Reset current puzzle">Reset</button>
+      <button class="ctrl-btn"             id="btn-note"  aria-label="Toggle notes mode" aria-pressed="false">Notes</button>
+      <button class="ctrl-btn"             id="btn-hint"  aria-label="Get a hint">Hint</button>
+      <button class="ctrl-btn"             id="btn-undo"  aria-label="Undo last move">Undo</button>
+      <button class="ctrl-btn"             id="btn-check" aria-label="Check board for errors">Check</button>
+    </div>
+
+    <!-- ── Status message ── -->
+    <div class="status-msg" id="status-msg" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       WIN MODAL
+  ══════════════════════════════════════ -->
+  <div class="modal-backdrop" id="win-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="modal-card">
+      <div class="modal-icon" aria-hidden="true">✦</div>
+      <h2 class="modal-title" id="win-title">Solved!</h2>
+      <p class="modal-sub" id="win-sub">Excellent puzzle work.</p>
+      <div class="modal-stats" id="win-stats-row"><!-- filled by JS --></div>
+      <div class="modal-actions">
+        <button class="card-btn btn-primary" id="btn-win-new">New Puzzle</button>
+        <button class="card-btn"             id="btn-win-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       GAME OVER MODAL
+  ══════════════════════════════════════ -->
+  <div class="modal-backdrop" id="gameover-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="go-title">
+    <div class="modal-card modal-card--danger">
+      <div class="modal-icon modal-icon--danger" aria-hidden="true">✕</div>
+      <h2 class="modal-title" id="go-title">Game Over</h2>
+      <p class="modal-sub">You used all your lives. Keep practising!</p>
+      <div class="modal-stats" id="go-stats-row"><!-- filled by JS --></div>
+      <div class="modal-actions">
+        <button class="card-btn btn-danger" id="btn-go-new">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       STATS MODAL
+  ══════════════════════════════════════ -->
+  <div class="modal-backdrop" id="stats-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+    <div class="modal-card modal-card--wide">
+      <h2 class="modal-title" id="stats-title">Statistics</h2>
+      <div class="stats-grid" id="stats-grid"><!-- filled by JS --></div>
+      <div class="best-times-section">
+        <h3 class="section-label">Best Times</h3>
+        <div class="best-times-grid" id="best-times-grid"><!-- filled by JS --></div>
+      </div>
+      <div class="modal-actions">
+        <button class="card-btn btn-primary" id="btn-stats-close">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CONFIRM MODAL
+  ══════════════════════════════════════ -->
+  <div class="modal-backdrop" id="confirm-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-card modal-card--sm">
+      <h2 class="modal-title" id="confirm-title">Start a new game?</h2>
+      <p class="modal-sub">Your current progress will be lost.</p>
+      <div class="modal-actions">
+        <button class="card-btn btn-primary" id="btn-confirm-yes">Yes, start new</button>
+        <button class="card-btn"             id="btn-confirm-no">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CANVAS for confetti
+  ══════════════════════════════════════ -->
+  <canvas id="confetti-canvas" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:900;"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
